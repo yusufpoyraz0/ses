@@ -1,0 +1,110 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #0a0a0f;
+  --foreground: #f0f0f5;
+  --card: #111118;
+  --card-foreground: #f0f0f5;
+  --border: #1e1e2e;
+  --input: #1e1e2e;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #1e1e2e;
+  --secondary-foreground: #a0a0b0;
+  --muted: #1a1a28;
+  --muted-foreground: #6b6b80;
+  --accent: #6366f1;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --ring: #6366f1;
+  --radius: 0.75rem;
+
+  /* ses.net.tr özel */
+  --brand: #6366f1;
+  --brand-glow: rgba(99, 102, 241, 0.15);
+  --brand-dim: rgba(99, 102, 241, 0.08);
+  --surface: #111118;
+  --surface-raised: #16161f;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --text-primary: #f0f0f5;
+  --text-secondary: #8888a0;
+  --text-muted: #4a4a60;
+}
+
+* {
+  box-sizing: border-box;
+  border-color: var(--border-subtle);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Seçim rengi */
+::selection { background: var(--brand-glow); color: var(--text-primary); }
+
+/* Geçiş animasyonları */
+* { transition-property: color, background-color, border-color, opacity, transform;
+    transition-duration: 150ms; transition-timing-function: ease; }
+
+/* Gradient text yardımcısı */
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow efekti */
+.glow-brand {
+  box-shadow: 0 0 40px var(--brand-glow), 0 0 80px rgba(99, 102, 241, 0.05);
+}
+
+/* Upload zone pulse */
+@keyframes pulse-border {
+  0%, 100% { border-color: rgba(99, 102, 241, 0.3); }
+  50% { border-color: rgba(99, 102, 241, 0.7); }
+}
+
+.upload-pulse { animation: pulse-border 2s ease-in-out infinite; }
+
+/* Progress bar shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.progress-shimmer {
+  background: linear-gradient(90deg,
+    #6366f1 0%,
+    #818cf8 40%,
+    #a78bfa 50%,
+    #818cf8 60%,
+    #6366f1 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Fade in */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up { animation: fadeUp 0.4s ease forwards; }

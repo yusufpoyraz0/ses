@@ -1,0 +1,113 @@
+# docker-compose.yml
+# Servisler: nginx → nextjs → pipeline → redis
+# Shared volume: /data/videos (host bind mount)
+
+services:
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ses_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - ses_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── Next.js ──────────────────────────────────────────────────────────────
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ses_nextjs
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_PATH=/data/videos
+      - PIPELINE_URL=http://pipeline:8000
+    volumes:
+      - /data/videos:/data/videos
+    networks:
+      - ses_net
+    expose:
+      - "3000"
+
+  # ── Python AI Pipeline ───────────────────────────────────────────────────
+  # BullMQ worker — kuyruktaki işleri okur, dublajı yapar, progress günceller
+  pipeline:
+    build:
+      context: ./pipeline
+      dockerfile: Dockerfile
+    container_name: ses_pipeline
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_PATH=/data/videos
+    volumes:
+      - /data/videos:/data/videos
+    networks:
+      - ses_net
+    expose:
+      - "8000"
+    # GPU desteği için aşağıdaki bloğu aç (NVIDIA driver gerekli):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ── Nginx ─────────────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: ses_nginx
+    restart: unless-stopped
+    depends_on:
+      - nextjs
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    networks:
+      - ses_net
+
+  # ── Certbot (SSL yenileme, isteğe bağlı) ─────────────────────────────────
+  # İlk kurulumda: docker compose run --rm certbot certonly --webroot ...
+  # certbot:
+  #   image: certbot/certbot
+  #   volumes:
+  #     - certbot_www:/var/www/certbot
+  #     - certbot_conf:/etc/letsencrypt
+  #   entrypoint: /bin/sh -c "trap exit TERM; while :; do sleep 12h; certbot renew; done"
+
+volumes:
+  redis_data:
+  certbot_www:
+  certbot_conf:
+
+networks:
+  ses_net:
+    driver: bridge
