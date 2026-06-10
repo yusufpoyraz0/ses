@@ -130,7 +130,7 @@ def transcribe_audio(audio_path: Path, source_lang: str = "en") -> list[dict]:
     """Whisper ile ses → metin + timestamp segmentler"""
     import whisper
     print(f"[whisper] Model yükleniyor (device={DEVICE})...")
-    model = whisper.load_model("medium", device=DEVICE)
+    model = whisper.load_model("small", device=DEVICE)
 
     print(f"[whisper] Transkripsiyon başlıyor: {audio_path}")
     result = model.transcribe(

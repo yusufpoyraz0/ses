@@ -13,7 +13,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Whisper modeli önceden indir (ilk istekte gecikme olmasın)
-RUN python -c "import whisper; whisper.load_model('medium')"
+RUN python -c "import whisper; whisper.load_model('small')"
 
 # Coqui TTS Türkçe modeli önceden indir
 RUN python -c "from TTS.api import TTS; TTS(model_name='tts_models/tr/common-voice/glow-tts')"
