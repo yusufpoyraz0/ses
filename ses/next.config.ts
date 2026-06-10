@@ -1,16 +1,32 @@
-// next.config.ts
-// Değişiklikler:
-//   output: 'standalone'     → Docker multi-stage build için zorunlu
-//   serverBodySizeLimit: '2gb' → Video dosya yükleme için
-
-import type { NextConfig } from 'next'
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
-
+  // Büyük video dosyası yüklemeleri için body size artır
   experimental: {
-    serverBodySizeLimit: '2gb',   // /api/process büyük dosya yüklemesi
+    serverActions: {
+      bodySizeLimit: "500mb",
+    },
   },
-}
 
-export default nextConfig
+  // Font indirme başarısız olursa sistem fontuna düş, uyarı verme
+  logging: {
+    fetches: {
+      fullUrl: false,
+    },
+  },
+
+  // Docker içinde çalışırken hostname izinleri
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ses.net.tr",
+      },
+    ],
+  },
+
+  // Geliştirmede cross-origin erişimine izin ver
+  allowedDevOrigins: ["192.168.1.36", "localhost"],
+};
+
+export default nextConfig;
