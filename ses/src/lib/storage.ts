@@ -10,7 +10,7 @@ import path from 'path'
 import { randomUUID } from 'crypto'
 
 // ─── Sabitler ───────────────────────────────────────────────────────────────
-const STORAGE_BASE = process.env.STORAGE_PATH ?? '/data/videos'
+const STORAGE_BASE = process.env.STORAGE_PATH ?? (process.cwd().includes('Desktop') ? './data/videos' : '/data/videos')
 
 export const DIRS = {
   uploads: path.join(STORAGE_BASE, 'uploads'),

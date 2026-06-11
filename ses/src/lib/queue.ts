@@ -8,7 +8,7 @@ import { Queue, QueueEvents } from 'bullmq'
 // ─── Redis bağlantı seçenekleri ─────────────────────────────────────────────
 // IORedis instance değil, plain options objesi → BullMQ ile tip uyumlu
 function redisOptions() {
-  const url = process.env.REDIS_URL ?? 'redis://redis:6379'
+  const url = process.env.REDIS_URL ?? 'redis://localhost:6379'
   try {
     const u = new URL(url)
     return {

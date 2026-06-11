@@ -6,8 +6,8 @@
 import { Worker, Job } from 'bullmq'
 import { type DubbingJobData, type DubbingJobResult, QUEUE_NAME } from './queue'
 
-const PIPELINE_URL = process.env.PIPELINE_URL ?? 'http://pipeline:8001'
-const REDIS_URL    = process.env.REDIS_URL    ?? 'redis://redis:6379'
+const PIPELINE_URL = process.env.PIPELINE_URL ?? 'http://localhost:8001'
+const REDIS_URL    = process.env.REDIS_URL    ?? 'redis://localhost:6379'
 
 function redisOptions() {
   try {

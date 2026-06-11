@@ -14,11 +14,12 @@ from pydantic import BaseModel
 app = FastAPI(title="ses.net.tr AI Pipeline", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-STORAGE_BASE = os.environ.get("STORAGE_PATH", "/data/videos")
+STORAGE_BASE = os.environ.get("STORAGE_PATH", "./data/videos")
 UPLOADS_DIR  = Path(STORAGE_BASE) / "uploads"
 OUTPUT_DIR   = Path(STORAGE_BASE) / "output"
 TEMP_DIR     = Path(STORAGE_BASE) / "temp"
-NEXTJS_URL   = os.environ.get("NEXTJS_URL", "http://localhost:3000")
+# Lokal dev: localhost:3001, Docker: web:3000
+NEXTJS_URL   = os.environ.get("NEXTJS_URL", "http://localhost:3001")
 DEVICE       = os.environ.get("DEVICE", "cpu")
 
 # Windows'ta ffmpeg tam path, Linux'ta sadece "ffmpeg"
@@ -50,13 +51,17 @@ class HealthResponse(BaseModel):
 
 async def report_progress(job_id: str, step: str, progress: int, message: str):
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
                 f"{NEXTJS_URL}/api/internal/progress",
                 json={"jobId": job_id, "step": step, "progress": progress, "message": message},
             )
+            if response.status_code >= 400:
+                print(f"[progress] ⚠ HTTP {response.status_code}: {response.text}")
+            else:
+                print(f"[progress] ✓ {job_id} → {step} ({progress}%)")
     except Exception as e:
-        print(f"[progress] Bildirim gönderilemedi: {e}")
+        print(f"[progress] ⚠ Bildirim gönderilemedi ({NEXTJS_URL}): {type(e).__name__}: {e}")
 
 
 def extract_audio(input_path: str, workdir: Path) -> Path:

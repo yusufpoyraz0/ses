@@ -52,9 +52,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     if (step === 'done') {
       // Pipeline tamamlandı → job'u complete olarak işaretle
+      const storagePath = process.env.STORAGE_PATH ?? './data/videos'
       await job.moveToCompleted(
         {
-          outputPath:      `/data/videos/output/${jobId}_dubbed.mp4`,
+          outputPath:      `${storagePath}/output/${jobId}_dubbed.mp4`,
           outputUrl:       `/api/download/${jobId}`,
           durationSeconds: 0,
         },
