@@ -77,7 +77,7 @@ def download_youtube(youtube_url: str, workdir: Path) -> Path:
     output_template = str(workdir / "yt_audio.%(ext)s")
     ffmpeg_dir = str(Path(FFMPEG).parent) if sys.platform == "win32" else "ffmpeg"
     cmd = [
-        "yt-dlp",
+        sys.executable, "-m", "yt_dlp",
         "--js-runtimes", "nodejs",
         "--ffmpeg-location", ffmpeg_dir,
         "-x",
