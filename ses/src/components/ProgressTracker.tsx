@@ -10,11 +10,11 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { id: "extract",     label: "Ses Ayrıştırma",   description: "Video'dan ses dosyası çıkarılıyor",     icon: "🎵" },
-  { id: "transcribe",  label: "Transkripsiyon",    description: "Konuşmalar metne dönüştürülüyor",       icon: "📝" },
-  { id: "translate",   label: "Çeviri",            description: "Metin Türkçe'ye çevriliyor",            icon: "🌍" },
-  { id: "tts",         label: "Seslendirme",       description: "Türkçe ses oluşturuluyor",              icon: "🔊" },
-  { id: "merge",       label: "Birleştirme",       description: "Ses ve video senkronize ediliyor",      icon: "🎬" },
+  { id: "downloading",  label: "Ses Ayrıştırma",  description: "Video'dan ses dosyası çıkarılıyor",   icon: "🎵" },
+  { id: "transcribing", label: "Transkripsiyon",   description: "Konuşmalar metne dönüştürülüyor",     icon: "📝" },
+  { id: "translating",  label: "Çeviri",           description: "Metin Türkçe'ye çevriliyor",          icon: "🌍" },
+  { id: "tts",          label: "Seslendirme",      description: "Türkçe ses oluşturuluyor",            icon: "🔊" },
+  { id: "mixing",       label: "Birleştirme",      description: "Ses ve video senkronize ediliyor",    icon: "🎬" },
 ];
 
 interface ProgressState {

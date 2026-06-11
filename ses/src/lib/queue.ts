@@ -12,7 +12,7 @@ function redisOptions() {
   try {
     const u = new URL(url)
     return {
-      host:                 u.hostname || 'redis',
+      host:                 u.hostname || 'localhost',
       port:                 Number(u.port) || 6379,
       password:             u.password || undefined,
       maxRetriesPerRequest: null as null,  // BullMQ blocking komutları için zorunlu
@@ -21,7 +21,7 @@ function redisOptions() {
   } catch {
     // URL parse edilemezse varsayılan Docker Compose değerleri
     return {
-      host:                 'redis',
+      host:                 'localhost',
       port:                 6379,
       maxRetriesPerRequest: null as null,
       enableReadyCheck:     false,

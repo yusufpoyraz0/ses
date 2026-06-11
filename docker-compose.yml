@@ -1,113 +1,114 @@
-# docker-compose.yml
-# Servisler: nginx → nextjs → pipeline → redis
-# Shared volume: /data/videos (host bind mount)
+version: "3.9"
 
 services:
 
-  # ── Redis ────────────────────────────────────────────────────────────────
+  # ── Next.js web uygulaması ──────────────────────────────────────────────
+  web:
+    build:
+      context: ./ses
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      NODE_ENV:       production
+      REDIS_URL:      redis://redis:6379
+      PIPELINE_URL:   http://pipeline:8001
+      STORAGE_PATH:   /data/videos
+      NEXTJS_URL:     http://web:3000
+    volumes:
+      - video_data:/data/videos
+    depends_on:
+      redis:
+        condition: service_healthy
+      pipeline:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # ── BullMQ Worker ───────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ./ses
+      dockerfile: Dockerfile
+    restart: always
+    command: node -r ts-node/register src/lib/worker.ts
+    environment:
+      NODE_ENV:     production
+      REDIS_URL:    redis://redis:6379
+      PIPELINE_URL: http://pipeline:8001
+      STORAGE_PATH: /data/videos
+    volumes:
+      - video_data:/data/videos
+    depends_on:
+      redis:
+        condition: service_healthy
+      pipeline:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # ── Python AI Pipeline ──────────────────────────────────────────────────
+  pipeline:
+    build:
+      context: ./ses/pipeline
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      STORAGE_PATH: /data/videos
+      NEXTJS_URL:   http://web:3000
+      DEVICE:       cpu
+    volumes:
+      - video_data:/data/videos
+      - model_cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s   # Model indirme için uzun süre
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+    networks:
+      - internal
+
+  # ── Redis ───────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: ses_redis
-    restart: unless-stopped
-    command: >
-      redis-server
-      --appendonly yes
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
+    restart: always
+    command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    networks:
-      - ses_net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
-
-  # ── Next.js ──────────────────────────────────────────────────────────────
-  nextjs:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: ses_nextjs
-    restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-    env_file: .env
-    environment:
-      - NODE_ENV=production
-      - REDIS_URL=redis://redis:6379
-      - STORAGE_PATH=/data/videos
-      - PIPELINE_URL=http://pipeline:8000
-    volumes:
-      - /data/videos:/data/videos
     networks:
-      - ses_net
-    expose:
-      - "3000"
+      - internal
 
-  # ── Python AI Pipeline ───────────────────────────────────────────────────
-  # BullMQ worker — kuyruktaki işleri okur, dublajı yapar, progress günceller
-  pipeline:
-    build:
-      context: ./pipeline
-      dockerfile: Dockerfile
-    container_name: ses_pipeline
-    restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-    env_file: .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - STORAGE_PATH=/data/videos
-    volumes:
-      - /data/videos:/data/videos
-    networks:
-      - ses_net
-    expose:
-      - "8000"
-    # GPU desteği için aşağıdaki bloğu aç (NVIDIA driver gerekli):
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-
-  # ── Nginx ─────────────────────────────────────────────────────────────────
+  # ── Nginx reverse proxy ─────────────────────────────────────────────────
   nginx:
-    image: nginx:1.25-alpine
-    container_name: ses_nginx
-    restart: unless-stopped
-    depends_on:
-      - nextjs
+    image: nginx:alpine
+    restart: always
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - certbot_www:/var/www/certbot:ro
-      - certbot_conf:/etc/letsencrypt:ro
+      - ssl_certs:/etc/letsencrypt:ro
+      - video_data:/data/videos:ro
+    depends_on:
+      - web
     networks:
-      - ses_net
-
-  # ── Certbot (SSL yenileme, isteğe bağlı) ─────────────────────────────────
-  # İlk kurulumda: docker compose run --rm certbot certonly --webroot ...
-  # certbot:
-  #   image: certbot/certbot
-  #   volumes:
-  #     - certbot_www:/var/www/certbot
-  #     - certbot_conf:/etc/letsencrypt
-  #   entrypoint: /bin/sh -c "trap exit TERM; while :; do sleep 12h; certbot renew; done"
+      - internal
 
 volumes:
-  redis_data:
-  certbot_www:
-  certbot_conf:
+  video_data:    # İşlenen videolar
+  redis_data:    # Job queue kalıcılığı
+  model_cache:   # AI modeller (~4GB, ilk deploy'da indirilir)
+  ssl_certs:     # Let's Encrypt sertifikaları
 
 networks:
-  ses_net:
+  internal:
     driver: bridge
